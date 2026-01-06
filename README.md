@@ -88,13 +88,7 @@ go test -tags=e2e -timeout 45m -v ./test/e2e/...
 
 ### 1. Bootstrap (one-time)
 
-Create the GCS bucket for Terraform state:
-
-```bash
-cd infra/envs/bootstrap
-tofu init
-tofu apply -var="project_id=YOUR_PROJECT" -var="region=us-central1"
-```
+Bootstrap using the guide in the `bootstrap` module's [README](./infra/modules/bootstrap/README.md).
 
 ### 2. Deploy Platform
 
@@ -178,6 +172,7 @@ go test -v ./test/... --json > gotest.jsonl
 ```
 
 **Test Categories:**
+
 - `test/` - Module integration tests (VPC, GKE, secrets, etc.)
 - `test/e2e/` - Full end-to-end tests requiring `//go:build e2e` tag
 

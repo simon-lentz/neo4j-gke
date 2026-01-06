@@ -1,9 +1,0 @@
-# Required variables for bootstrap environment
-project_id      = "your-gcp-project-id"
-bucket_location = "us-central1"
-kms_location    = "us-central1"
-
-# Optional overrides
-# bucket_name              = "custom-state-bucket-name"
-# bucket_versioning        = true
-# enable_audit_logging     = true
