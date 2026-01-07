@@ -53,8 +53,8 @@ variable "environment" {
 
 variable "neo4j_chart_version" {
   type        = string
-  description = "Version of the Neo4j Helm chart to deploy."
-  default     = "5.26.0"
+  description = "Version of the Neo4j Helm chart to deploy. Requires 2025.10+ for native Vector type."
+  default     = "2025.10.1"
 }
 
 variable "neo4j_namespace" {
@@ -113,6 +113,20 @@ variable "backup_pod_label" {
   type        = string
   description = "Label value to identify backup pods for network policy. Pods with 'app.kubernetes.io/name' matching this value get backup network access."
   default     = "neo4j-backup"
+}
+
+variable "enable_external_access" {
+  type        = bool
+  description = <<-EOT
+    Allow external access to Neo4j via the LoadBalancer.
+    When true, NetworkPolicy permits ingress from any IP (0.0.0.0/0) on Bolt (7687)
+    and optionally HTTP (7474) ports.
+
+    WARNING: This exposes Neo4j to the internet. Ensure strong passwords and
+    consider using master_authorized_networks on the GKE cluster for additional
+    protection. For production, prefer VPN or bastion host access.
+  EOT
+  default     = false
 }
 
 # Direct password input for testing (bypasses Secret Manager)

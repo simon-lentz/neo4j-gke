@@ -1,0 +1,16 @@
+# kind cluster configuration for local Neo4j testing
+# See: https://kind.sigs.k8s.io/docs/user/configuration/
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# Single node cluster (sufficient for Neo4j testing)
+nodes:
+  - role: control-plane
+
+# Network configuration
+networking:
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+  # For full NetworkPolicy support, install Calico after cluster creation:
+  #   make calico-install

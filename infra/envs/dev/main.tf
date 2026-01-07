@@ -132,7 +132,9 @@ module "secrets" {
 }
 
 # Neo4j Application Deployment
+# Only deployed when deploy_neo4j_app = true (after password is set in Secret Manager)
 module "neo4j" {
+  count  = var.deploy_neo4j_app ? 1 : 0
   source = "../../modules/neo4j_app"
 
   # Platform inputs
@@ -151,6 +153,7 @@ module "neo4j" {
   enable_neo4j_browser       = var.enable_neo4j_browser
   allowed_ingress_namespaces = var.allowed_ingress_namespaces
   neo4j_password_k8s_secret  = var.neo4j_password_k8s_secret
+  enable_external_access     = var.enable_external_access
 
   depends_on = [module.gke, module.backup_sa, module.backup_bucket, module.secrets]
 }

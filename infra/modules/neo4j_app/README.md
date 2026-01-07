@@ -2,6 +2,8 @@
 
 This module deploys Neo4j Enterprise to a GKE Autopilot cluster. It provisions Kubernetes resources and the Neo4j Helm chart.
 
+**Requires Neo4j 2025.10+** for native Vector type support with Cypher 25.
+
 ## Resources Created
 
 - Kubernetes namespace with environment labels
@@ -29,11 +31,12 @@ module "neo4j" {
   neo4j_password_secret_id = module.secrets.secret_ids["neo4j-admin-password-dev"]
 
   # Optional configuration
-  neo4j_chart_version  = "5.26.0"
-  neo4j_namespace      = "neo4j"
-  neo4j_instance_name  = "neo4j-dev"
-  neo4j_storage_size   = "10Gi"
-  enable_neo4j_browser = true
+  neo4j_chart_version    = "2025.10.1"  # Requires 2025.10+ for Vector type
+  neo4j_namespace        = "neo4j"
+  neo4j_instance_name    = "neo4j-dev"
+  neo4j_storage_size     = "10Gi"
+  enable_neo4j_browser   = true
+  enable_external_access = false  # Set true to allow LoadBalancer access
 
   depends_on = [module.gke]
 }
@@ -81,11 +84,12 @@ provider "helm" {
 | neo4j_password | Direct password input (bypasses Secret Manager) | `string` | `null` | no |
 | neo4j_password_k8s_secret | Name of existing K8s secret containing password | `string` | `null` | no |
 | environment | Environment name (dev, staging, prod, test) | `string` | `"dev"` | no |
-| neo4j_chart_version | Version of the Neo4j Helm chart | `string` | `"5.26.0"` | no |
+| neo4j_chart_version | Version of the Neo4j Helm chart (requires 2025.10+ for Vector type) | `string` | `"2025.10.1"` | no |
 | neo4j_namespace | Kubernetes namespace for Neo4j | `string` | `"neo4j"` | no |
 | neo4j_instance_name | Name for the Neo4j instance | `string` | `"neo4j-dev"` | no |
 | neo4j_storage_size | Storage size for Neo4j data volume | `string` | `"10Gi"` | no |
 | enable_neo4j_browser | Enable HTTP for Neo4j Browser (port 7474) | `bool` | `true` | no |
+| enable_external_access | Allow external access via LoadBalancer (exposes to internet) | `bool` | `false` | no |
 | allowed_ingress_namespaces | Additional namespaces allowed to access Neo4j | `list(string)` | `[]` | no |
 | neo4j_helm_repository | Helm repository URL for Neo4j chart | `string` | `"https://helm.neo4j.com/neo4j"` | no |
 | backup_pod_label | Label value to identify backup pods | `string` | `"neo4j-backup"` | no |
@@ -143,8 +147,11 @@ open http://localhost:7474/browser
 
 Default-deny policy blocks all traffic. Explicit rules allow:
 - **Ingress**: Bolt (7687), HTTP (7474 if enabled) from same namespace + allowed namespaces
+- **External access**: When `enable_external_access = true`, allows ingress from any IP (0.0.0.0/0)
 - **Egress**: DNS (53), GKE metadata (169.254.169.254:80), HTTPS (443 for GCS)
 - **Backup traffic**: Port 6362 between Neo4j and backup pods
+
+**Note**: NetworkPolicies use `app=<instance_name>` label selector to match Neo4j pods, as this is the label scheme used by the Neo4j Helm chart (not the standard `app.kubernetes.io/name`).
 
 ### Pod Security Context
 

@@ -1,0 +1,83 @@
+# Neo4j Helm Chart Values - Local Development (kind cluster)
+#
+# Mirrors the GKE deployment configuration as closely as possible.
+# GCP-specific features (Workload Identity, GCS backups) are disabled.
+#
+# Requires Neo4j 2025.10+ for native Vector type support.
+# See: https://neo4j.com/blog/developer/introducing-neo4j-native-vector-data-type/
+#
+# Usage:
+#   helm install neo4j-local neo4j/neo4j -f values-local.yaml --version 2025.10.1
+
+neo4j:
+  # Enterprise Edition - required for Vector type and backup support
+  edition: enterprise
+  acceptLicenseAgreement: "yes"
+  name: neo4j-local
+  # Password set via --set neo4j.password=<password>
+
+# Service Configuration - ClusterIP (access via kubectl port-forward)
+services:
+  neo4j:
+    enabled: false
+  default:
+    enabled: true
+    type: ClusterIP
+  admin:
+    enabled: true
+    type: ClusterIP
+
+# Neo4j Configuration - matches GKE deployment
+config:
+  # Cypher 25 is required for native Vector type support
+  db.query.default_language: "CYPHER_25"
+  # HTTP enabled for Neo4j Browser
+  server.http.enabled: "true"
+  server.https.enabled: "false"
+  # Bolt TLS disabled for local dev (OPTIONAL requires SSL policy/certs)
+  server.bolt.tls_level: "DISABLED"
+  # Backup listener enabled (same as GKE, though no GCS locally)
+  server.backup.listen_address: "0.0.0.0:6362"
+  server.backup.enabled: "true"
+
+# Volume Configuration - use kind's default StorageClass
+volumes:
+  data:
+    mode: "defaultStorageClass"
+    defaultStorageClass:
+      requests:
+        storage: 10Gi  # Same as GKE default
+
+# Resource Configuration - same requests as GKE
+resources:
+  requests:
+    cpu: "500m"
+    memory: "2Gi"
+
+# Pod Configuration - matches GKE deployment
+podSpec:
+  nodeSelector: {}
+  tolerations: []
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 7474
+    runAsGroup: 7474
+    fsGroup: 7474
+    seccompProfile:
+      type: RuntimeDefault
+
+# Container Security Context - matches GKE deployment
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Logging - same as GKE
+logs:
+  redirectQueryLog: true
+
+# Metrics disabled (same as GKE default)
+metrics:
+  prometheus:
+    enabled: false

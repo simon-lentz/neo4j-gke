@@ -79,7 +79,8 @@ resource "kubernetes_network_policy" "allow_neo4j" {
   spec {
     pod_selector {
       match_labels = {
-        "app.kubernetes.io/name" = "neo4j"
+        # Neo4j Helm chart uses "app" label, not "app.kubernetes.io/name"
+        "app" = var.neo4j_instance_name
       }
     }
 
@@ -112,6 +113,15 @@ resource "kubernetes_network_policy" "allow_neo4j" {
             match_labels = {
               "kubernetes.io/metadata.name" = from.value
             }
+          }
+        }
+      }
+      # Allow external access via LoadBalancer (when enabled)
+      dynamic "from" {
+        for_each = var.enable_external_access ? [1] : []
+        content {
+          ip_block {
+            cidr = "0.0.0.0/0"
           }
         }
       }
@@ -178,7 +188,8 @@ resource "kubernetes_network_policy" "allow_backup" {
       from {
         pod_selector {
           match_labels = {
-            "app.kubernetes.io/name" = "neo4j"
+            # Neo4j Helm chart uses "app" label
+            "app" = var.neo4j_instance_name
           }
         }
       }
@@ -232,7 +243,8 @@ resource "kubernetes_network_policy" "neo4j_to_backup" {
   spec {
     pod_selector {
       match_labels = {
-        "app.kubernetes.io/name" = "neo4j"
+        # Neo4j Helm chart uses "app" label
+        "app" = var.neo4j_instance_name
       }
     }
 
@@ -300,6 +312,28 @@ resource "helm_release" "neo4j" {
   set {
     name  = "config.server\\.http\\.enabled"
     value = var.enable_neo4j_browser ? "true" : "false"
+    type  = "string"
+  }
+
+  # Ensure services.default.enabled is passed as a string
+  set {
+    name  = "services.default.enabled"
+    value = "true"
+    type  = "string"
+  }
+
+  # Ensure services.neo4j.enabled is passed as a string
+  set {
+    name  = "services.neo4j.enabled"
+    value = "false"
+    type  = "string"
+  }
+
+  # Ensure services.admin.enabled is passed as a string
+  set {
+    name  = "services.admin.enabled"
+    value = "true"
+    type  = "string"
   }
 
   depends_on = [

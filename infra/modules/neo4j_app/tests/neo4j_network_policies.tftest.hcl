@@ -17,6 +17,7 @@ variables {
   backup_bucket_url      = "gs://test-project-backup"
   neo4j_password         = "test-password"
   neo4j_namespace        = "neo4j"
+  neo4j_instance_name    = "neo4j-dev"
   backup_pod_label       = "neo4j-backup"
 }
 
@@ -100,18 +101,25 @@ run "neo4j_to_backup_egress_policy" {
     error_message = "Neo4j to backup policy should allow egress on port 6362"
   }
 
+  # Note: Neo4j Helm chart uses "app" label, not "app.kubernetes.io/name"
   assert {
-    condition     = kubernetes_network_policy.neo4j_to_backup.spec[0].pod_selector[0].match_labels["app.kubernetes.io/name"] == "neo4j"
-    error_message = "Neo4j to backup policy should select Neo4j pods"
+    condition     = kubernetes_network_policy.neo4j_to_backup.spec[0].pod_selector[0].match_labels["app"] == "neo4j-dev"
+    error_message = "Neo4j to backup policy should select Neo4j pods using 'app' label"
   }
 }
 
-# Test: Allow Neo4j policy includes Bolt port
+# Test: Allow Neo4j policy includes Bolt port and correct pod selector
 run "neo4j_policy_allows_bolt" {
   command = plan
 
   assert {
     condition     = kubernetes_network_policy.allow_neo4j.spec[0].ingress[0].ports[0].port == "7687"
     error_message = "Neo4j policy should allow Bolt protocol on port 7687"
+  }
+
+  # Note: Neo4j Helm chart uses "app" label, not "app.kubernetes.io/name"
+  assert {
+    condition     = kubernetes_network_policy.allow_neo4j.spec[0].pod_selector[0].match_labels["app"] == "neo4j-dev"
+    error_message = "Neo4j policy should select Neo4j pods using 'app' label"
   }
 }

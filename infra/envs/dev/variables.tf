@@ -43,8 +43,8 @@ variable "state_bucket" {
 # Neo4j Configuration
 variable "neo4j_chart_version" {
   type        = string
-  description = "Version of the Neo4j Helm chart to deploy."
-  default     = "5.26.0"
+  description = "Version of the Neo4j Helm chart to deploy. Requires 2025.10+ for native Vector type."
+  default     = "2025.10.1"
 }
 
 variable "neo4j_namespace" {
@@ -85,4 +85,31 @@ variable "neo4j_password_k8s_secret" {
     For production, create the K8s secret externally and provide its name here.
   EOT
   default     = null
+}
+
+variable "deploy_neo4j_app" {
+  type        = bool
+  description = <<-EOT
+    Whether to deploy the Neo4j application.
+
+    Set to false (default) for initial infrastructure deployment.
+    After creating the password in Secret Manager, set to true to deploy Neo4j.
+
+    Two-phase deployment:
+    1. tofu apply (deploy_neo4j_app=false) - creates VPC, GKE, secrets container
+    2. gcloud secrets versions add neo4j-admin-password-dev --data-file=-
+    3. tofu apply -var="deploy_neo4j_app=true" - deploys Neo4j
+  EOT
+  default     = false
+}
+
+variable "enable_external_access" {
+  type        = bool
+  description = <<-EOT
+    Allow external access to Neo4j via the LoadBalancer.
+    When true, NetworkPolicy permits ingress from any IP on Bolt and HTTP ports.
+
+    WARNING: Exposes Neo4j to the internet. Use strong passwords.
+  EOT
+  default     = false
 }

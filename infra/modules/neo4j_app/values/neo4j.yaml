@@ -1,8 +1,11 @@
 # Neo4j Helm Chart Values - Dev Environment
 # See https://neo4j.com/docs/operations-manual/current/kubernetes/helm-charts-setup/
+#
+# Requires Neo4j 2025.10+ for native Vector type support.
+# See: https://neo4j.com/blog/developer/introducing-neo4j-native-vector-data-type/
 
 neo4j:
-  # Use Enterprise Edition for backup support
+  # Use Enterprise Edition for backup support and Vector type
   edition: enterprise
   acceptLicenseAgreement: "yes"
   # Password is set via Terraform set_sensitive block
@@ -24,29 +27,35 @@ services:
 # =============================================================================
 # SECURITY NOTE: Development Configuration Only
 # =============================================================================
-# The following TLS settings are intentionally permissive for local development:
+# The following TLS settings are intentionally permissive for development:
 # - HTTP enabled for Neo4j Browser access without certificates
 # - HTTPS disabled to avoid certificate management overhead
-# - Bolt TLS optional to allow unencrypted driver connections
+# - Bolt TLS disabled (unencrypted connections)
 #
 # For production deployments, update these settings:
-#   server.http.enabled: "false"        # Disable unencrypted HTTP
-#   server.https.enabled: "true"        # Enable HTTPS with valid certificate
-#   server.bolt.tls_level: "REQUIRED"   # Enforce TLS on all Bolt connections
+#   server.http.enabled: "false"           # Disable unencrypted HTTP
+#   server.https.enabled: "true"           # Enable HTTPS
+#   server.bolt.tls_level: "REQUIRED"      # Enforce TLS on Bolt connections
+#   ssl.policy.bolt.enabled: "true"        # Enable Bolt SSL policy
+#   ssl.policy.bolt.base_directory: "..."  # Path to certificates
 #
 # Production also requires:
 # - TLS certificate provisioning (cert-manager or manual Kubernetes Secret)
-# - Certificate secret referenced in Helm values
+# - Certificate secret mounted into the Neo4j pod
 # =============================================================================
 
 # Neo4j Configuration
 config:
-  # Use Cypher 25 as default query language
+  # Cypher 25 is required for native Vector type support
   db.query.default_language: "CYPHER_25"
+
   # HTTP (Neo4j Browser) controlled by Terraform variable enable_neo4j_browser
   server.https.enabled: "false"
-  # Bolt TLS optional for dev (required for prod)
-  server.bolt.tls_level: "OPTIONAL"
+
+  # Bolt TLS disabled for dev - "OPTIONAL" requires SSL policy/certs to be configured.
+  # For production with TLS, set to "REQUIRED" and configure ssl.policy.bolt.*
+  server.bolt.tls_level: "DISABLED"
+
   # Enable backup listener
   server.backup.listen_address: "0.0.0.0:6362"
   server.backup.enabled: "true"
