@@ -60,6 +60,11 @@ config:
   server.backup.listen_address: "0.0.0.0:6362"
   server.backup.enabled: "true"
 
+  # Transaction memory limit - prevents MemoryPoolOutOfMemoryError on complex traversals
+  # Default is 70% of heap (~358MiB with 2Gi memory request)
+  # Increased to 1.5GiB to support graph agent's multi-hop queries
+  dbms.memory.transaction.total.max: "1536m"
+
 # Volume Configuration
 volumes:
   data:
