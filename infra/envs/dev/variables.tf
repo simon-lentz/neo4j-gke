@@ -62,7 +62,7 @@ variable "neo4j_instance_name" {
 variable "neo4j_storage_size" {
   type        = string
   description = "Storage size for Neo4j data volume."
-  default     = "10Gi"
+  default     = "25Gi"
 }
 
 variable "enable_neo4j_browser" {
@@ -111,5 +111,5 @@ variable "enable_external_access" {
 
     WARNING: Exposes Neo4j to the internet. Use strong passwords.
   EOT
-  default     = false
+  default     = true
 }

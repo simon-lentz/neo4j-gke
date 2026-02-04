@@ -322,11 +322,11 @@ resource "helm_release" "neo4j" {
     type  = "string"
   }
 
-  # Ensure services.neo4j.enabled is passed as a string
+  # Ensure services.neo4j.enabled is passed with auto type inference
   set {
     name  = "services.neo4j.enabled"
-    value = "false"
-    type  = "string"
+    value = "true"
+    type  = "auto"
   }
 
   # Ensure services.admin.enabled is passed as a string
@@ -341,5 +341,7 @@ resource "helm_release" "neo4j" {
     kubernetes_network_policy.allow_neo4j
   ]
 
-  timeout = 600 # 10 minutes for initial deployment
+  # Required when changing immutable StatefulSet fields (e.g., volumeClaimTemplates).
+  force_update = true
+  timeout      = 1800 # 30 minutes for initial deployment / upgrades
 }

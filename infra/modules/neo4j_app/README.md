@@ -34,7 +34,7 @@ module "neo4j" {
   neo4j_chart_version    = "2025.10.1"  # Requires 2025.10+ for Vector type
   neo4j_namespace        = "neo4j"
   neo4j_instance_name    = "neo4j-dev"
-  neo4j_storage_size     = "10Gi"
+  neo4j_storage_size     = "25Gi"
   enable_neo4j_browser   = true
   enable_external_access = false  # Set true to allow LoadBalancer access
 
@@ -87,7 +87,7 @@ provider "helm" {
 | neo4j_chart_version | Version of the Neo4j Helm chart (requires 2025.10+ for Vector type) | `string` | `"2025.10.1"` | no |
 | neo4j_namespace | Kubernetes namespace for Neo4j | `string` | `"neo4j"` | no |
 | neo4j_instance_name | Name for the Neo4j instance | `string` | `"neo4j-dev"` | no |
-| neo4j_storage_size | Storage size for Neo4j data volume | `string` | `"10Gi"` | no |
+| neo4j_storage_size | Storage size for Neo4j data volume | `string` | `"25Gi"` | no |
 | enable_neo4j_browser | Enable HTTP for Neo4j Browser (port 7474) | `bool` | `true` | no |
 | enable_external_access | Allow external access via LoadBalancer (exposes to internet) | `bool` | `false` | no |
 | allowed_ingress_namespaces | Additional namespaces allowed to access Neo4j | `list(string)` | `[]` | no |

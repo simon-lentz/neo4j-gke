@@ -9,12 +9,22 @@ neo4j:
   edition: enterprise
   acceptLicenseAgreement: "yes"
   # Password is set via Terraform set_sensitive block
+  # Resource Configuration (container limits/requests)
+  resources:
+    cpu: "1000m"
+    memory: "10Gi"
+
+# Plugin installation (copies APOC Core from /var/lib/neo4j/labs into /var/lib/neo4j/plugins)
+env:
+  NEO4J_PLUGINS: '["apoc"]'
 
 # Service Configuration
 services:
-  # Disable external LoadBalancer (use internal only)
+  # Enable external LoadBalancer for Bolt/HTTP access (dev)
   neo4j:
-    enabled: false
+    enabled: true
+    spec:
+      type: LoadBalancer
   # Enable ClusterIP for in-cluster access
   default:
     enabled: true
@@ -60,31 +70,63 @@ config:
   server.backup.listen_address: "0.0.0.0:6362"
   server.backup.enabled: "true"
 
-  # Transaction memory limit - prevents MemoryPoolOutOfMemoryError on complex traversals
-  # Default is 70% of heap (~358MiB with 2Gi memory request)
-  # Increased to 1.5GiB to support graph agent's multi-hop queries
-  dbms.memory.transaction.total.max: "1536m"
+  # ==========================================================================
+  # Memory Configuration (aligned with local Neo4j Desktop)
+  # ==========================================================================
+  # Heap: 4-5 GiB for transaction state and query context
+  server.memory.heap.initial_size: "4G"
+  server.memory.heap.max_size: "5G"
+
+  # Page cache: 4 GiB for mapping store files
+  server.memory.pagecache.size: "4G"
+
+  # Transaction memory limits
+  # Total max across all transactions
+  dbms.memory.transaction.total.max: "4G"
+  # Per-transaction max: 0B = unlimited (default, allows large single transactions)
+
+  # ==========================================================================
+  # APOC Core Plugin Configuration
+  # ==========================================================================
+  # APOC Core is installed into /var/lib/neo4j/plugins via NEO4J_PLUGINS.
+  # See: https://neo4j.com/docs/operations-manual/current/kubernetes/plugins/
+  server.directories.plugins: "/var/lib/neo4j/plugins"
+  server.config.strict_validation.enabled: "false"
+
+  # Security settings for APOC procedures
+  dbms.security.procedures.unrestricted: "apoc.*"
+  # Allow APOC; keep wildcard unless you want to restrict other procedures
+  dbms.security.procedures.allowlist: "*"
+
+# Optional: APOC-specific settings
+apoc_config:
+  apoc.trigger.enabled: "true"
+  apoc.import.file.enabled: "true"
 
 # Volume Configuration
+# NOTE: Storage size is overridden by Terraform variable neo4j_storage_size
 volumes:
   data:
     mode: "defaultStorageClass"
     defaultStorageClass:
       requests:
-        storage: 10Gi
+        storage: 25Gi
 
-# Resource Configuration for Autopilot
-# Autopilot will auto-scale resources, but we set reasonable defaults
+# Resource Configuration for Autopilot (legacy key)
+# NOTE: The chart uses `neo4j.resources` for the main container. Keep this in
+# sync or remove after confirming no other chart components depend on it.
 resources:
   requests:
     cpu: "500m"
-    memory: "2Gi"
+    memory: "10Gi"
 
 # Pod Configuration
 podSpec:
   # Allow scheduling on any node (Autopilot handles this)
   nodeSelector: {}
   tolerations: []
+  # Explicitly include pods in the LoadBalancer selector
+  loadbalancer: include
   # Pod-level security context
   # See: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
   securityContext:
